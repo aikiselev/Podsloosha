@@ -19,8 +19,8 @@ app.conf.update(
     CELERY_TASK_SERIALIZER='json',
     CELERY_ACCEPT_CONTENT=['json'],
     CELERYBEAT_SCHEDULE = {
-        'print-fibonacci': {
-            'task': 'tasks.print_fib',
+        'poll-podsloosha': {
+            'task': 'tasks.poll_podsloosha',
             'schedule': timedelta(seconds=10)
         },
     }

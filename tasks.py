@@ -4,7 +4,7 @@ from celery import Celery, task
 from datetime import timedelta
 from os import environ
 from periscope_streams import PeriscopeAdvertiser, Location
-from simplekv.fs import DictStore, RedisStore
+from simplekv.memory import DictStore
 
 
 # Fetch the Redis connection string from the env, or use localhost by default

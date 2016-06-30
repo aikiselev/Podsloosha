@@ -16,7 +16,7 @@ app = Celery('tasks')
 
 # Use Redis as our broker and define json as the default serializer
 app.conf.update(
-    BROKER_URL=REDIS_URL,
+    BROKER_URL=REhDIS_URL,
     CELERY_TASK_SERIALIZER='json',
     CELERY_ACCEPT_CONTENT=['json'],
     CELERYBEAT_SCHEDULE = {
@@ -30,7 +30,7 @@ app.conf.update(
 locations = [Location(56.880372, 60.729744, 56.928178, 60.843899)]
 # db = RedisStore(redis.from_url(REDIS_URL))
 mongo_client = pymongo.MongoClient(environ.get('MONGODB_URI', 'mongodb://localhost'))
-mongo_db = mongo_client['podsloosha']
+mongo_db = mongo_client.get_default_database()
 db = MongoStore(mongo_db, 'streams')
 
 @task

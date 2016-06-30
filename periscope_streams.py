@@ -11,8 +11,8 @@ import json
 from daemonize import Daemonize
 import logging
 
-import locale
-locale.setlocale(locale.LC_ALL, "ru_RU.utf8")
+#import locale
+#locale.setlocale(locale.LC_ALL, "ru_RU.utf8")
 
 
 class Location:
@@ -155,7 +155,8 @@ class PeriscopeAdvertiser:
         self.logger.info("••••• Poll started: {start_time} •••••".format(
             start_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         # check for deletion of old streams
-        db_keys = self.db.keys()
+        db_keys = [key for key in self.db.keys() if key.startswith('1')]
+        self.logger.warn("###: " + str(db_keys))
         streams_info = dict((s['id'], s) for s in get_streams_info(db_keys))
         for stream_id in db_keys:
             if stream_id not in streams_info:

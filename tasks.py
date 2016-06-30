@@ -4,7 +4,8 @@ from celery import Celery, task
 from datetime import timedelta
 from os import environ
 from periscope_streams import PeriscopeAdvertiser, Location
-from simplekv.memory import DictStore
+from simplekv.memory.redisstore import RedisStore
+import redis
 
 
 # Fetch the Redis connection string from the env, or use localhost by default
@@ -27,11 +28,13 @@ app.conf.update(
 )
 
 locations = [Location(56.880372, 60.729744, 56.928178, 60.843899)]
-db = DictStore()
+db = RedisStore(redis.from_url(REDIS_URL))
+# db = RedisStore(redis.StrictRedis())
 
 @task
 def poll_podsloosha():
     advertiser = PeriscopeAdvertiser(locations, db)
+    advertiser.poll()
 
 
 # # Define the fibonacci function for use in our task

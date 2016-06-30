@@ -16,7 +16,7 @@ app = Celery('tasks')
 
 # Use Redis as our broker and define json as the default serializer
 app.conf.update(
-    BROKER_URL=REhDIS_URL,
+    BROKER_URL=REDIS_URL,
     CELERY_TASK_SERIALIZER='json',
     CELERY_ACCEPT_CONTENT=['json'],
     CELERYBEAT_SCHEDULE = {

@@ -1,6 +1,6 @@
 {
   "name": "Podsloosha",
-  "description": "A skeleton app for creating single worker scheduled tasks in Python running on Heroku",
+  "description": "A polling app for publishing Periscope streams from certain area to VK public page",
   "website": "https://github.com/aikiselev/Podsloosha",
   "repository": "https://github.com/aikiselev/Podsloosha",
   "addons": ["redistogo:nano"]

@@ -11,8 +11,8 @@ import json
 from daemonize import Daemonize
 import logging
 
-#import locale
-#locale.setlocale(locale.LC_ALL, "ru_RU.utf8")
+import locale
+locale.setlocale(locale.LC_ALL, locale.locale_alias['ru'])
 
 
 class Location:
@@ -86,10 +86,7 @@ class PeriscopeAdvertiser:
 
     @staticmethod
     def get_advertisement(stream):
-        return """Название: {status} | {state_description}
-        Автор: {name}
-        В приложении: pscp://broadcast/{id}
-        На сайте: https://periscope.tv/{username}/{id}""".format(
+        return """Название: {status} | {state_description}\nАвтор: {name}\nВ приложении: pscp://broadcast/{id}\nНа сайте: https://periscope.tv/{username}/{id}""".format(
             state_description=PeriscopeAdvertiser.state_description(stream),
             status=stream['status'],
             name=stream['user_display_name'],

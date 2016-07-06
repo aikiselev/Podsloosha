@@ -22,7 +22,7 @@ app.conf.update(
     CELERYBEAT_SCHEDULE = {
         'poll-podsloosha': {
             'task': 'tasks.poll_podsloosha',
-            'schedule': timedelta(seconds=10)
+            'schedule': timedelta(seconds=20)
         },
     }
 )

@@ -1,7 +1,10 @@
 import requests
 
-cookie = "WGkGYTFQWEVkd1JCeXJqZXZo5aBR3R3o_PzVqgZs7niLEeb_6jYo0XjaOhe-D9Fhag=="
-
+cookie = "WlUD93siVXNlcklkIjoiNDQwMyIsIlNlc3Npb24iOiI4MThnTC1RaWlvN3UwalRiWHl1T3J4MGhEYzd6OG9IUTB4WmxYc0NNMHhZIi" \
+         "wiVmVyc2lvbiI6MX1CSk3C4AeHcA4aoKUDgpOPUaQkhQJFw7tLJ38iMfrAJg=="
+# Periscope Consumer Key - 9I4iINIyd0R01qEPEwT9IC6RE
+# Periscope Secret Key - BDP2fLhkfHdQ3TynI1mzOQyJAODtLCTPv2JHdcNSiYM2rUIsyG
+# How to get another cookie: http://pmmlabs.ru/blog/2016/03/27/periscope-pc-client/
 
 class PeriscopeAPI():
 
@@ -30,6 +33,8 @@ class PeriscopeAPI():
 
         if response.status_code == 200:
             return response.json()
+        else:
+            return response
 
     def getBroadcastUsers(self, broadcast_id):
         url = self.api_url + "getBroadcastViewers"

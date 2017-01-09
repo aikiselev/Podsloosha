@@ -1,14 +1,14 @@
-amqp==1.4.6
-anyjson==0.3.3
-billiard==3.3.0.19
-celery==3.1.17
-kombu==3.0.24
-pytz==2014.10
-redis==2.10.3
-polling == 0.3.0
-daemonize == 2.4.6
-simplekv == 0.10.0
-requests == 2.9.1
-vk == 2.0.2
-python-dateutil == 2.4.2
-pymongo == 3.2.2
+amqp
+anyjson
+billiard
+celery
+daemonize
+kombu
+polling
+pymongo
+python-dateutil
+pytz
+redis
+requests
+simplekv
+vk

@@ -9,7 +9,7 @@ import pymongo
 
 
 # Fetch the Redis connection string from the env, or use localhost by default
-REDIS_URL = environ.get('REDISTOGO_URL', 'redis://localhost')
+REDIS_URL = environ.get('REDIS_URL', 'redis://localhost')
 
 # Setup the celery instance under the 'tasks' namespace
 app = Celery('tasks')

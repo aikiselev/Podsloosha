@@ -12,8 +12,9 @@ vksession = vk.Session(access_token=environ.get("VK_ACCESS_TOKEN"))
 vkapi = vk.API(vksession, lang='ru')
 vkpublic = VKPublic(vkapi, public_id)
 
+
 def main():
-    print("Posted suggests: {}".format(vkpublic.publish_suggests()))
+    print(f"Posted suggests: {vkpublic.publish_suggests()}")
 
 if __name__ == '__main__':
     main()

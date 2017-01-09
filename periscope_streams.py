@@ -12,7 +12,10 @@ from daemonize import Daemonize
 import logging
 
 import locale
+import arrow.parser
+
 locale.setlocale(locale.LC_ALL, locale.locale_alias['ru'])
+datetime_parser = arrow.parser.DateTimeParser()
 
 
 class Location:
@@ -74,24 +77,20 @@ class PeriscopeAdvertiser:
     def state_description(stream):
         state = stream['state']
         if state == "ENDED":
-            return """Запись ({time})""".format(
-                time="От " + PeriscopeAdvertiser._parse_time(stream['end']))
+            return f"Запись (От {PeriscopeAdvertiser._parse_time(stream['end'])})"
         elif state == "RUNNING":
             return "Прямой эфир"
         elif state == "TIMED_OUT":
-            return """Эфир прерван ({time})""".format(
-                time="Был начат в " + PeriscopeAdvertiser._parse_time(stream['created_at']))
+            return f"Эфир прерван (Начат в {PeriscopeAdvertiser._parse_time(stream['created_at'])})"
         else:
             return "Статус недоступен"
 
     @staticmethod
     def get_advertisement(stream):
-        return """Название: {status} | {state_description}\nАвтор: {name}\nВ приложении: pscp://broadcast/{id}\nНа сайте: https://periscope.tv/{username}/{id}""".format(
-            state_description=PeriscopeAdvertiser.state_description(stream),
-            status=stream['status'],
-            name=stream['user_display_name'],
-            id=stream['id'],
-            username=stream['username'])
+        return f"""Название: {stream['status']} | {PeriscopeAdvertiser.state_description(stream)}\n \
+               Автор: {stream['user_display_name']}\n \
+               В приложении: pscp://broadcast/{stream['id']}\n \
+               На сайте: https://periscope.tv/{stream['username']}/{stream['id']}"""
 
     @staticmethod
     def get_image(stream):
@@ -107,9 +106,7 @@ class PeriscopeAdvertiser:
     @staticmethod
     def prepare_post(stream):
         advertisement = PeriscopeAdvertiser.get_advertisement(stream)
-        link = "https://periscope.tv/{username}/{id}".format(
-            id=stream['id'],
-            username=stream['username'])
+        link = f"https://periscope.tv/{stream['username']}/{stream['id']}"
         photo_url = PeriscopeAdvertiser.get_image(stream)
         location = PeriscopeAdvertiser.get_location(stream)
         photo_attach = vkpublic.get_photo_attachment(photo_url,
@@ -122,6 +119,9 @@ class PeriscopeAdvertiser:
     def db_put(self, key, value):
         return self.db.put(key, json.dumps(value).encode(encoding='UTF-8'))
 
+    def db_delete(self, key):
+        return self.db.delete(key)
+
     def db_get(self, key):
         return json.loads(self.db.get(key).decode(encoding='UTF-8'))
 
@@ -133,7 +133,7 @@ class PeriscopeAdvertiser:
                           long=post['long'], lat=post['lat'])
             self.db_put(stream['id'], {'post_id': post_id, 'state': stream['state']})
         except Exception as e:
-            self.logger.warn(e)
+            self.logger.warning(e)
 
     def post_stream(self, stream):
         post = self.prepare_post(stream)
@@ -142,30 +142,40 @@ class PeriscopeAdvertiser:
                                     long=post['long'], lat=post['lat'])
             self.db_put(stream['id'], {'post_id': post_id, 'state': stream['state']})
         except Exception as e:
-            self.logger.warn(e)
+            self.logger.warning(e)
 
     def delete_stream(self, stream_id):
         vkpublic.delete(self.db_get(stream_id)['post_id'])
-        self.db.delete(stream_id)
+        self.db_delete(stream_id)
 
     def poll(self):
-        self.logger.info("••••• Poll started: {start_time} •••••".format(
-            start_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        self.logger.info(f"••••• Poll started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} •••••")
         # check for deletion of old streams
         db_keys = [key for key in self.db.keys() if key.startswith('1')]
-        self.logger.warn("###: " + str(db_keys))
+        self.logger.warning(f"DB contains {len(db_keys)} streams.")
         streams_info = dict((s['id'], s) for s in get_streams_info(db_keys))
         for stream_id in db_keys:
             if stream_id not in streams_info:
                 self.logger.info("Deleting stream: " + stream_id)
                 self.delete_stream(stream_id)
             else:
-                new_state = streams_info[stream_id]['state']
+                current_stream_info = streams_info[stream_id]
+
+                # check if stream state has changed
+                new_state = current_stream_info['state']
                 old_state = self.db_get(stream_id)['state']
                 if new_state != old_state:
-                    self.logger.info("Changing state: {id} | {old} -> {new}".format(
-                        id=stream_id, old=old_state, new=new_state))
-                    self.edit_stream(streams_info[stream_id])
+                    self.logger.info(f"Changing state: {stream_id} | {old_state} -> {new_state}")
+                    self.edit_stream(current_stream_info)
+
+                # check if stream is too old to check
+                if new_state == 'ENDED':
+                    stream_end_time = arrow.Arrow.fromdatetime(
+                        datetime_parser.parse_iso(current_stream_info['end']))
+                    if (arrow.now() - stream_end_time).days > 3:
+                        self.logger.info(f"Removing old stream: {stream_id}")
+                        self.db_delete(stream_id)
+
         # add new streams
         streams = []
         for location in self.locations:
@@ -174,8 +184,7 @@ class PeriscopeAdvertiser:
             if stream['id'] not in db_keys:
                 self.logger.info("Adding stream: " + stream['id'])
                 self.post_stream(stream)
-        self.logger.info("••••• Poll ended: {end_time} •••••".format(
-            end_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        self.logger.info(f"••••• Poll ended: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} •••••")
 
 
 def main(logger):

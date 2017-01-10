@@ -28,7 +28,8 @@ class Location:
 
     def get_streams(self, include_replay=False):
         periscope_api = PeriscopeAPI()
-        return periscope_api.mapGeoBroadcastFeed(self.p1_lat, self.p1_lon, self.p2_lat, self.p2_lon,
+        return periscope_api.mapGeoBroadcastFeed(self.p1_lat, self.p1_lon,
+                                                 self.p2_lat, self.p2_lon,
                                                  include_replay=include_replay)
 
 
@@ -61,6 +62,15 @@ def get_streams_info(broadcast_ids):
         return streams
 
 
+def catch_exceptions_warning(function):
+    def wrapped():
+        try:
+            function()
+        except Exception as e:
+            logger.warning(e)
+    return wrapped
+
+
 class PeriscopeAdvertiser:
 
     def __init__(self, _locations, _db, _logger=logging.getLogger()):
@@ -81,16 +91,16 @@ class PeriscopeAdvertiser:
         elif state == "RUNNING":
             return "Прямой эфир"
         elif state == "TIMED_OUT":
-            return f"Эфир прерван (Начат в {PeriscopeAdvertiser._parse_time(stream['created_at'])})"
+            return f"Запись (Начата в {PeriscopeAdvertiser._parse_time(stream['created_at'])})"
         else:
             return "Статус недоступен"
 
     @staticmethod
     def get_advertisement(stream):
-        return f"""Название: {stream['status']} | {PeriscopeAdvertiser.state_description(stream)}\n \
-               Автор: {stream['user_display_name']}\n \
-               В приложении: pscp://broadcast/{stream['id']}\n \
-               На сайте: https://periscope.tv/{stream['username']}/{stream['id']}"""
+        return f"Название: {stream['status']} | {PeriscopeAdvertiser.state_description(stream)}\n" \
+               f"Автор: {stream['user_display_name']}\n" \
+               f"В приложении: pscp://broadcast/{stream['id']}\n" \
+               f"На сайте: https://periscope.tv/{stream['username']}/{stream['id']}"
 
     @staticmethod
     def get_image(stream):
@@ -125,25 +135,22 @@ class PeriscopeAdvertiser:
     def db_get(self, key):
         return json.loads(self.db.get(key).decode(encoding='UTF-8'))
 
+    @catch_exceptions_warning
     def edit_stream(self, stream):
         post = self.prepare_post(stream)
         post_id = self.db_get(stream['id'])['post_id']
-        try:
-            vkpublic.edit(post_id, post['message'], attachments=post['attachments'],
-                          long=post['long'], lat=post['lat'])
-            self.db_put(stream['id'], {'post_id': post_id, 'state': stream['state']})
-        except Exception as e:
-            self.logger.warning(e)
+        vkpublic.edit(post_id, post['message'], attachments=post['attachments'],
+                      long=post['long'], lat=post['lat'])
+        self.db_put(stream['id'], {'post_id': post_id, 'state': stream['state']})
 
+    @catch_exceptions_warning
     def post_stream(self, stream):
         post = self.prepare_post(stream)
-        try:
-            post_id = vkpublic.post(post['message'], attachments=post['attachments'],
-                                    long=post['long'], lat=post['lat'])
-            self.db_put(stream['id'], {'post_id': post_id, 'state': stream['state']})
-        except Exception as e:
-            self.logger.warning(e)
+        post_id = vkpublic.post(post['message'], attachments=post['attachments'],
+                                long=post['long'], lat=post['lat'])
+        self.db_put(stream['id'], {'post_id': post_id, 'state': stream['state']})
 
+    @catch_exceptions_warning
     def delete_stream(self, stream_id):
         vkpublic.delete(self.db_get(stream_id)['post_id'])
         self.db_delete(stream_id)
@@ -168,11 +175,12 @@ class PeriscopeAdvertiser:
                     self.logger.info(f"Changing state: {stream_id} | {old_state} -> {new_state}")
                     self.edit_stream(current_stream_info)
 
-                # check if stream is too old to check
+                # check if stream is too old
+                days_making_stream_old = 3
                 if new_state == 'ENDED':
                     stream_end_time = arrow.Arrow.fromdatetime(
                         datetime_parser.parse_iso(current_stream_info['end']))
-                    if (arrow.now() - stream_end_time).days > 3:
+                    if (arrow.now() - stream_end_time).days > days_making_stream_old:
                         self.logger.info(f"Removing old stream: {stream_id}")
                         self.db_delete(stream_id)
 
@@ -191,7 +199,8 @@ def main(logger):
     def main():
         db = FilesystemStore("/home/kiselev/db")
         poll_cooldown = 30
-        locations = [Location(56.880372, 60.729744, 56.928178, 60.843899)]
+        locations = [Location(56.880372, 60.729744,
+                              56.928178, 60.843899)]
         advertiser = PeriscopeAdvertiser(locations, db, logger)
         polling.poll(advertiser.poll, step=poll_cooldown, poll_forever=True)
     return main

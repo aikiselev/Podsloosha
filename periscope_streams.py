@@ -62,21 +62,23 @@ def get_streams_info(broadcast_ids):
         return streams
 
 
-def catch_exceptions_warning(function):
-    def wrapped():
+def log_exceptions(function):
+    def wrapped(*args, **kwargs):
         try:
-            function()
+            function(*args, **kwargs)
         except Exception as e:
-            logger.warning(e)
+            PeriscopeAdvertiser.logger.warning(e)
     return wrapped
 
 
 class PeriscopeAdvertiser:
 
+    logger = None
+
     def __init__(self, _locations, _db, _logger=logging.getLogger()):
         self.db = _db  # {'stream_id': {'post_id', 'state'}}
         self.locations = _locations
-        self.logger = _logger
+        PeriscopeAdvertiser.logger = _logger
 
     @staticmethod
     def _parse_time(time_string):
@@ -135,7 +137,7 @@ class PeriscopeAdvertiser:
     def db_get(self, key):
         return json.loads(self.db.get(key).decode(encoding='UTF-8'))
 
-    @catch_exceptions_warning
+    @log_exceptions
     def edit_stream(self, stream):
         post = self.prepare_post(stream)
         post_id = self.db_get(stream['id'])['post_id']
@@ -143,14 +145,14 @@ class PeriscopeAdvertiser:
                       long=post['long'], lat=post['lat'])
         self.db_put(stream['id'], {'post_id': post_id, 'state': stream['state']})
 
-    @catch_exceptions_warning
+    @log_exceptions
     def post_stream(self, stream):
         post = self.prepare_post(stream)
         post_id = vkpublic.post(post['message'], attachments=post['attachments'],
                                 long=post['long'], lat=post['lat'])
         self.db_put(stream['id'], {'post_id': post_id, 'state': stream['state']})
 
-    @catch_exceptions_warning
+    @log_exceptions
     def delete_stream(self, stream_id):
         vkpublic.delete(self.db_get(stream_id)['post_id'])
         self.db_delete(stream_id)

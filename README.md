@@ -1,21 +1,6 @@
-# Heroku Periodical
+# Podsloosha
 
-A skeleton app based on Heroku/Python/Celery that runs a single worker executing periodical tasks.
+A polling app for publishing Periscope streams from certain area to VK public page.
 
-This skeleton can be used to quickly run periodical tasks on the Heroku platform using an arbitrary `timedelta` or `crontab` entry. The code is based on a single worker which runs with an integrated `celery beat` scheduler to avoid using a separate process just for scheduling. Redis is used as the broker, based on the `redistogo:nano` plan.
-
-## Deployment
-
-```bash
-$ heroku create
-$ heroku addons:add redistogo:nano
-$ git push heroku master
-$ heroku ps:scale worker=1
-```
-
-### Try it now!
-
-You can single-click deploy this app using the awesome Heroku Button:
-
-[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+It is ready to use on Heroku. The only required thing is to change `public_id` in `my_vk_public.py` and to set `VK_ACCESS_TOKEN` environment variable.
 
